@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: iot-events
+spec:
+  replicas: 1
+  strategy:
+    rollingUpdate:
+      maxUnavailable: 0
+    type: RollingUpdate
+  template:
+    spec:
+      containers:
+      - env:
+          - name: RABBITMQ_HOST
+            value: rabbitmq
+        image: ghcr.io/diwise/iot-events:changeme
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: default-port
+        name: iot-events
+        ports:
+        - containerPort: 8080
+          name: default-port
+          protocol: TCP
+        resources:
+          limits:
+            cpu: 250m
+            memory: 250Mi
+          requests:
+            cpu: 50m
+            memory: 100Mi
+        startupProbe:
+          httpGet:
+            path: /health
+            port: default-port
+        volumeMounts:
+          - name: conf-volume
+            mountPath: /opt/diwise/config
+            readOnly: true   
+      serviceAccountName: iot-events
+      volumes:        
+        - name: conf-volume
+          configMap:
+            name: iot-events-cfg-cm
